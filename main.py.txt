@@ -1,0 +1,43 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import pandas as pd
+from ci_algorithm import MotorDiagnosticoCI
+
+app = FastAPI(title="API Mensuração CI 4.0")
+
+# Permissão de segurança para conectar com a tela do celular
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class RespostaSchema(BaseModel):
+    pesquisa_id: int
+    nome_colaborador: str
+    setor: str
+    cargo: str
+    score_entendimento: int
+    score_relevancia: int
+    score_aplicabilidade: int
+
+banco_respostas = []
+
+@app.post("/api/v1/respostas")
+def receber_resposta(resposta: RespostaSchema):
+    dados = resposta.model_dump()
+    dados["id"] = len(banco_respostas) + 1
+    banco_respostas.append(dados)
+    return {"status": "sucesso", "id": dados["id"]}
+
+@app.get("/api/v1/diagnostico/clusters")
+def obter_clusters():
+    if not banco_respostas:
+        return {"mensagem": "Nenhuma resposta registrada ainda."}
+    
+    df = pd.DataFrame(banco_respostas)
+    motor = MotorDiagnosticoCI(df)
+    return motor.analisar_clusters_setor_cargo().to_dict(orient="records")

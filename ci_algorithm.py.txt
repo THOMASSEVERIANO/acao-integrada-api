@@ -1,0 +1,60 @@
+import pandas as pd
+import numpy as np
+
+class MotorDiagnosticoCI:
+    PESOS_COMPREENSAO = {
+        "100% Claro": 4.0,       
+        "Quase lá": 3.0,          
+        "Médio": 2.5,            
+        "Confuso": 1.5,          
+        "Não entendeu": 1.0      
+    }
+    
+    PESOS_ACAO = {
+        "Ação Imediata": 4.0,
+        "Ação Gradual": 3.0,
+        "Planejamento": 2.5,
+        "Delegação": 2.0,
+        "Sem perspectiva": 1.0
+    }
+
+    def __init__(self, df_respostas: pd.DataFrame):
+        self.df = df_respostas.copy()
+
+    def calcular_temperatura_experiencia(self) -> pd.DataFrame:
+        self.df['temperatura_graus'] = (
+            (self.df['score_entendimento'] * 0.3) +
+            (self.df['score_relevancia'] * 0.3) +
+            (self.df['score_aplicabilidade'] * 0.4)
+        ) * 10  
+        return self.df
+
+    def analisar_clusters_setor_cargo(self) -> pd.DataFrame:
+        self.calcular_temperatura_experiencia()
+        cluster = self.df.groupby(['setor', 'cargo']).agg(
+            total_respostas=('id', 'count'),
+            media_temperatura=('temperatura_graus', 'mean'),
+            media_entendimento=('score_entendimento', 'mean'),
+            media_relevancia=('score_relevancia', 'mean'),
+            media_aplicabilidade=('score_aplicabilidade', 'mean')
+        ).reset_index()
+        return cluster.round(2)
+
+    def gerar_frases_diagnosticas(self, setor_alvo: str = None) -> list:
+        frases = []
+        df_analise = self.df if not setor_alvo else self.df[self.df['setor'] == setor_alvo]
+        
+        if df_analise.empty:
+            return ["Sem dados suficientes para o setor especificado."]
+
+        self.calcular_temperatura_experiencia()
+        temp_media = df_analise['temperatura_graus'].mean()
+        
+        if temp_media >= 80:
+            frases.append(f"Alta Efetividade: Temperatura em {temp_media:.1f}°C.")
+        elif temp_media >= 60:
+            frases.append(f"Atenção Operacional: Temperatura em {temp_media:.1f}°C.")
+        else:
+            frases.append(f"Risco Crítico: Temperatura em {temp_media:.1f}°C.")
+
+        return frases

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard CI 4.0 - Ação Integrada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Cabeçalho -->
+        <div class="flex justify-between items-center mb-8 bg-white p-6 rounded-xl shadow-sm">
+            <div>
+                <h1 class="text-3xl font-bold text-orange-600">Ação Integrada</h1>
+                <p class="text-gray-500">Dashboard Estratégico de Comunicação Interna (CI 4.0)</p>
+            </div>
+            <button onclick="carregarDados()" class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition">
+                🔄 Atualizar Dados
+            </button>
+        </div>
+
+        <!-- Tabela de Resultados -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6 bg-orange-50 border-b border-orange-100">
+                <h2 class="text-xl font-semibold text-gray-800">Análise de Clusters (Setor x Cargo)</h2>
+                <p class="text-sm text-gray-600">Cruzamento de dados de Temperatura, Entendimento e Aplicabilidade.</p>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
+                            <th class="p-4 font-semibold border-b">Setor</th>
+                            <th class="p-4 font-semibold border-b">Cargo</th>
+                            <th class="p-4 font-semibold border-b text-center">Respostas</th>
+                            <th class="p-4 font-semibold border-b text-center">Temperatura (0 a 100)</th>
+                            <th class="p-4 font-semibold border-b text-center">Média Entendimento</th>
+                            <th class="p-4 font-semibold border-b text-center">Média Aplicabilidade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-corpo" class="divide-y divide-gray-100">
+                        <!-- Os dados vão aparecer aqui automaticamente -->
+                        <tr>
+                            <td colspan="6" class="p-8 text-center text-gray-500">
+                                Carregando dados do algoritmo...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Integração com o Motor Python -->
+    <script>
+        async function carregarDados() {
+            const tbody = document.getElementById('tabela-corpo');
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">Carregando dados...</td></tr>';
+
+            try {
+                // Chama a API que construímos
+                const resposta = await fetch('http://localhost:8000/api/v1/diagnostico/clusters');
+                const dados = await resposta.json();
+
+                if (dados.mensagem) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-red-500 font-semibold">${dados.mensagem}</td></tr>`;
+                    return;
+                }
+
+                // Monta as linhas da tabela
+                let html = '';
+                dados.forEach(item => {
+                    // Define a cor da temperatura (Acima de 70 é verde, abaixo é vermelho)
+                    let corTemp = item.media_temperatura >= 70 ? 'text-green-600' : 'text-red-600';
+
+                    html += `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="p-4 text-gray-800 font-medium">${item.setor}</td>
+                            <td class="p-4 text-gray-600">${item.cargo}</td>
+                            <td class="p-4 text-center font-bold text-gray-700">${item.total_respostas}</td>
+                            <td class="p-4 text-center font-bold ${corTemp} text-lg">${item.media_temperatura.toFixed(1)}°C</td>
+                            <td class="p-4 text-center text-gray-600">${item.media_entendimento.toFixed(1)}</td>
+                            <td class="p-4 text-center text-gray-600">${item.media_aplicabilidade.toFixed(1)}</td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+
+            } catch (erro) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-600 font-bold">Erro de conexão. A tela preta do motor (API) está rodando?</td></tr>';
+            }
+        }
+
+        // Carrega os dados logo que a tela abre
+        carregarDados();
+    </script>
+</body>
+</html>
