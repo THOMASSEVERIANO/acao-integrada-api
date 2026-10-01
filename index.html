@@ -96,7 +96,7 @@
 
             try {
                 // Envia os dados para a API local
-                const resposta = await fetch('http://localhost:8000/api/v1/respostas', {
+              const resposta = await fetch('https://acao-integrada-api.onrender.com/api/v1/respostas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dados)
